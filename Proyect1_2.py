@@ -1,9 +1,14 @@
 import re
+import random
 #esto funciona unicamente para combinacional, sin comentarios
 #~~~~~~~~~~~~Abrir archivo
-File = "design2.sv"
+#File = input("File name: ")
+File = "design5.sv"
 #File = input("Texto a examinar: ")
 #regex = input("Ingresa una expresion regular: ")
+
+#x=input("if sequential write 's', if combinational write 'c': ")
+
 with open(File, 'r') as OpenedFile:
     if (OpenedFile.mode != 'r'): print("no file open")
     else: 
@@ -16,6 +21,12 @@ if matches:
     print("Matches: ", ModuleName)
 
 #~~~~~~~~~~~~~Encontrar entradas
+#regexclk = r"clk|clock"
+#matches = re.finditer(regexclk, text, re.MULTILINE | re.IGNORECASE)
+
+#regexrst = r"rst|reset"
+#matches = re.finditer(regexrst, text, re.MULTILINE | re.IGNORECASE)
+
 regexInputs = r"input\s*(\[*.*)[,|\s|;]"
 matches = re.finditer(regexInputs, text)
 Inputs=[]
@@ -107,9 +118,27 @@ for i in range(len(list1)):      # En este for agregamos el tamaño en bits de c
         list2.append([list1[i][ind2+1:],size])  # Agregamos el tamño del elemento de la lista
     else:
         list2.append([list1[i],1]) # Agregamos el tamño de 1 al elemnto de 1 bit 
+#design5.svprint(list2)
 #list 2 tiene todas las entradas y sus dimensiones
 
-# Crea un lista donde cada elemento es un Output
+#~~~~~~~~~~~~~Removes clock
+inputclck = "" 
+for i in list2:
+    if (i[0] == "clk") or (i[0] == "clock"):
+        inputclck=i[0]
+        list2.remove(i)
+
+#~~~~~~~~~~~~~Removes reset
+inputrst = "" 
+for i in list2:
+    print(i[0])
+    if (i[0] == "rst") or (i[0]== "reset"):
+        inputrst=i[0]
+        list2.remove(i)
+
+print(list2)
+print(inputrst)
+# ~~~~~~~~~~~~~Crea un lista donde cada elemento es un Output
 list3=[]
 for i in range(len(Outputs)):
     ind1=Outputs[i].find(']') # Identificamos si hay o no ']' es decir si el tamño es de mas de 1 bit
@@ -135,7 +164,7 @@ with open(OutFile, 'a') as OpenedFile:
         for i in range(len(list3)-1): # Con este for eliminamos los espacios de los string de la lista de salidas
             list3[i]=list3[i].replace(" ","")                         # Cremos un string con la declaracion directa
             Outputstring=Outputstring+"."+list3[i]+"("+list3[i]+"),"  # de las salidas del DUT/UUT 
-        OpenedFile.write(ModuleName+" UUT("+Inputstring+Outputstring+"."+list3[-1]+"("+list3[-1]+"));\n")
+        OpenedFile.write(ModuleName+" UUT("+Inputstring+Outputstring+"."+list3[-1].replace(" ","")+"("+list3[-1].replace(" ","")+"));\n")
         OpenedFile.write("\ninitial\n\tbegin\n\t\t$dumpfile(\""+ModuleName+'.vcd");\n\t\t$dumpvars(1,'+ModuleName+"_TB);\n")
 
 
@@ -146,16 +175,30 @@ for i in range(len(list2)): # Con este for determinamos la suma total del tamño
 
 inps=""
 OutFile = "Testbench.sv"
-with open(OutFile, 'a') as OpenedFile:
-   if (OpenedFile.mode != 'a'): print("Not ready to write")
-   else:
-        for i in range(2**numbits): # Con este for cremos cada combiacion de bits de las entrdas
-            inps+="\t\t\t{"
-            
-            for j in range(len(list2)-1): # Aqui pndemos entre '{}' cada entrada excepto la ultima
-                inps += list2[j][0]+","
-            
-            inps+=list2[-1][0]+"}="+(str(bin(i)).replace("0b",str(numbits)+"'b")+";#1\n") # Aqui gurdamos en una string
-                                    #da en binario       Sutituye 0b                      # la declaracion de cada 
-        OpenedFile.write(inps)      #la combinacion      por N'b                            señal de prueba
-        OpenedFile.write("\n\t\t$finish;\n\tend\nendmodule")
+if len(list2)>0:
+    with open(OutFile, 'a') as OpenedFile:
+        if (OpenedFile.mode != 'a'): print("Not ready to write")
+        else:
+            if 2**numbits <25:
+                random_signals=random.sample(range(1,2**numbits-1),2**numbits-2)
+            elif 2**numbits >100:
+                random_signals=random.sample(range(1,2**numbits-1),100)
+            else:
+                v=round(2**numbits/2)
+                random_signals=random.sample(range(1,2**numbits-1),v)   # Four samples without replacement
+        
+            random_signals.extend([0,2**numbits-1])
+            random_signals.sort()
+        #print(random_signals)
+
+            for i in range(2**numbits): # Con este for cremos cada combiacion de bits de las entrdas
+                #if 1 == random_signals.co:
+                    if i in random_signals:
+                        inps+="\t\t\t{"
+                        for j in range(len(list2)-1): # Aqui pndemos entre '{}' cada entrada excepto la ultima
+                            inps += list2[j][0]+","
+                
+                        inps+=list2[-1][0]+"}="+(str(bin(i)).replace("0b",str(numbits)+"'b")+";#1\n") # Aqui gurdamos en una string
+                                        #da en binario       Sutituye 0b                      # la declaracion de cada 
+            OpenedFile.write(inps)      #la combinacion      por N'b                            señal de prueba
+            OpenedFile.write("\n\t\t$finish;\n\tend\nendmodule")
