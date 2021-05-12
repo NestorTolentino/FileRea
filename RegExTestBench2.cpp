@@ -6,7 +6,6 @@
 using namespace std;
 
 int main(){
-    cout <<"Hola"<<endl;
     //read .sv file
     ifstream file;
     std::ofstream o("testbench.sv");
