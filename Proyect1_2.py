@@ -1,18 +1,40 @@
+#######################################################################
+#Descripción:   Generador de TestBench para modulos de SystemVerilog
+#               utilizando expresiones regulares en python.
+#Limitaciones:  unicamente para diseños ombinacionales, sin comentarios
+#
+#
+#
+#Autores:   Alejandro Ramirez
+#           Emmanuel Vera
+#           Ivar Ramírez
+#           Nestor Tolentino
+#######################################################################
+
 import re
 import random
-#esto funciona unicamente para combinacional, sin comentarios
+
+#~~~~~~~~~~~~~~~~~~~~funciones~~~~~~~~~~~~~~~~~~~~#
+def StringOfFile(NameOfFile):
+    with open(File, 'r') as OpenedFile:
+        if (OpenedFile.mode != 'r'): print("no file open")
+        else: print("Archivo", NameOfFile, "abierto")
+        text = OpenedFile.read()
+    return text
+
 #~~~~~~~~~~~~Abrir archivo
 #File = input("File name: ")
-File = "design5.sv"
 #File = input("Texto a examinar: ")
+File = "design5.sv"
 #regex = input("Ingresa una expresion regular: ")
-
 #x=input("if sequential write 's', if combinational write 'c': ")
+text = StringOfFile(File)
 
-with open(File, 'r') as OpenedFile:
-    if (OpenedFile.mode != 'r'): print("no file open")
-    else: 
-        text = OpenedFile.read()
+#~~~~~~~~~~~~~~~~~~~~remover comentarios~~~~~~~~~~~~~~~~~~~~#
+regexComments = r"\/\/[^\n]*\n"
+matches = re.finditer(regexComments, text)
+for match in matches:
+    text = text.replace(match.group(),"")
 #~~~~~~~~~~~~~Encontrar nombre de modulo
 regexNameModule= r"module\s*([\w]*)\s*\("
 matches = re.search(regexNameModule, text)
@@ -202,4 +224,3 @@ if len(list2)>0:
                                         #da en binario       Sutituye 0b                      # la declaracion de cada 
             OpenedFile.write(inps)      #la combinacion      por N'b                            señal de prueba
             OpenedFile.write("\n\t\t$finish;\n\tend\nendmodule")
-#This line is to check Github first pushing (Ivarr95)
