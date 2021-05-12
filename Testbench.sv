@@ -1,9 +1,8 @@
 `timescale 1ns/1ns 
 module FSM3_TB;
 	wire [2:0] outp;
-	wire logic;
 	reg clk,reset;
-FSM3 UUT(.outp(outp),.logic(logic));
+FSM3 UUT(.outp(outp));
 
 initial
 	begin
