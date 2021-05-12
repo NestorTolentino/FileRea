@@ -8,3 +8,9 @@ initial
 	begin
 		$dumpfile("FSM3.vcd");
 		$dumpvars(1,FSM3_TB);
+FSM3 UUT(.outp(outp));
+
+initial
+	begin
+		$dumpfile("FSM3.vcd");
+		$dumpvars(1,FSM3_TB);
