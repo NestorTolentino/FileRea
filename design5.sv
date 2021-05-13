@@ -1,9 +1,8 @@
 module RAM_memory(clk,Enable, ReadWrite, Address, DataIn, DataOut);
   input Enable, ReadWrite,clk;
-  input [3:0]DataIn;
-  input [5:0]Address;
-  output[3:0]DataOut;
-  reg[3:0]	 DataOut;
+  input [3:0] DataIn, Data2;
+  input [5:0] Address;
+  output reg [3:0] DataOut;
   reg[3:0]	 Mem[0:63];
  
   initial begin
