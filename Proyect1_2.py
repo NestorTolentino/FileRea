@@ -1,9 +1,10 @@
 #######################################################################
 #Descripción:   Generador de TestBench para modulos de SystemVerilog
 #               utilizando expresiones regulares en python.
-#Limitaciones:  unicamente para diseños ombinacionales, sin comentarios
-#
-#
+#Limitaciones:  
+#               El reloj debe llamarse clk o clock, solo debe haber 1
+#               el reset debe ser positivo, debe llamarse rst o reset (solo 1)
+#               no deben haber instanciaciones en el modulo
 #
 #Autores:   Alejandro Ramirez
 #           Emmanuel Vera
@@ -61,7 +62,7 @@ for match in matches:
 for i in range(len(Inputs)):
     a_str = Inputs[i]
     index = a_str.rfind(';')     # rfind encuntra el ultimo elemento del string con ';'
-    index2 = a_str.rfind(',')    # rfind encuntra el ultimo elemento del string con ','
+    index2 = a_str.rfind(',')    # rfind encuntra el ultimo el  emento del string con ','
     if index != -1:           
         Inputs[i]= a_str[:index]  # Si encuentra ';' la quita de la string 
     elif index2 != -1:  
@@ -94,7 +95,7 @@ for i in a:
 
 
 #~~~~~~~~~~~~~Declara el modulo del test bench y las señales reg wire a usar
-OutFile = "Testbench.sv"
+OutFile = "Testbenc.sv"
 with open(OutFile, 'w') as OpenedFile:
    if (OpenedFile.mode != 'w'): print("Not ready to write")
    else:
@@ -143,23 +144,7 @@ for i in range(len(list1)):      # En este for agregamos el tamaño en bits de c
 #design5.svprint(list2)
 #list 2 tiene todas las entradas y sus dimensiones
 
-#~~~~~~~~~~~~~Removes clock
-inputclck = "" 
-for i in list2:
-    if (i[0] == "clk") or (i[0] == "clock"):
-        inputclck=i[0]
-        list2.remove(i)
 
-#~~~~~~~~~~~~~Removes reset
-inputrst = "" 
-for i in list2:
-    print(i[0])
-    if (i[0] == "rst") or (i[0]== "reset"):
-        inputrst=i[0]
-        list2.remove(i)
-
-print(list2)
-print(inputrst)
 # ~~~~~~~~~~~~~Crea un lista donde cada elemento es un Output
 list3=[]
 for i in range(len(Outputs)):
@@ -173,7 +158,7 @@ for i in range(len(Outputs)):
 
 
 #~~~~~~~~~~~~~Instancia el modulo a probar
-OutFile = "Testbench.sv"
+OutFile = "Testbenc.sv"
 with open(OutFile, 'a') as OpenedFile:
    if (OpenedFile.mode != 'a'): print("Not ready to write")
    else:
@@ -189,6 +174,19 @@ with open(OutFile, 'a') as OpenedFile:
         OpenedFile.write(ModuleName+" UUT("+Inputstring+Outputstring+"."+list3[-1].replace(" ","")+"("+list3[-1].replace(" ","")+"));\n")
         OpenedFile.write("\ninitial\n\tbegin\n\t\t$dumpfile(\""+ModuleName+'.vcd");\n\t\t$dumpvars(1,'+ModuleName+"_TB);\n")
 
+#~~~~~~~~~~~~~Removes clock
+inputclck = "" 
+for i in list2:
+    if (i[0].lower() == "clk") or (i[0].lower() == "clock"):
+        inputclck=i[0]
+        list2.remove(i)
+
+#~~~~~~~~~~~~~Removes reset
+inputrst = "" 
+for i in list2:
+    if (i[0].lower() == "rst") or (i[0].lower() == "reset"):
+        inputrst=i[0]
+        list2.remove(i)
 
 #~~~~~~~~~~~~~Creacion de las señales de prueba
 numbits=0
@@ -196,11 +194,23 @@ for i in range(len(list2)): # Con este for determinamos la suma total del tamño
     numbits+=list2[i][1]
 
 inps=""
-OutFile = "Testbench.sv"
-if len(list2)>0:
+
+OutFile = "Testbenc.sv"
+if len(list2)==0:
+    with open(OutFile, 'a') as OpenedFile:
+        if (OpenedFile.mode != 'a'): print("Not ready to write")
+        else: 
+            OpenedFile.write("\n\t\t$finish;\n\tend\n")
+            OpenedFile.write("\talways #1 " + inputclck + "=~" + inputclck + ";\nendmodule")
+            
+else:
     with open(OutFile, 'a') as OpenedFile:
         if (OpenedFile.mode != 'a'): print("Not ready to write")
         else:
+            if inputrst!="":
+                OpenedFile.write("\t\t\t"+inputrst+"=1'b1; #1 \n" + "\t\t\t" + inputrst +"=1'b0; #1\n")
+            if inputclck!="":
+                OpenedFile.write("\t\t\t"+inputclck+"=1'b0; #1\n")
             if 2**numbits <25:
                 random_signals=random.sample(range(1,2**numbits-1),2**numbits-2)
             elif 2**numbits >100:
@@ -213,7 +223,7 @@ if len(list2)>0:
             random_signals.sort()
         #print(random_signals)
 
-            for i in range(2**numbits): # Con este for cremos cada combiacion de bits de las entrdas
+            for i in random_signals: # Con este for cremos cada combiacion de bits de las entrdas
                 #if 1 == random_signals.co:
                     if i in random_signals:
                         inps+="\t\t\t{"
@@ -223,4 +233,7 @@ if len(list2)>0:
                         inps+=list2[-1][0]+"}="+(str(bin(i)).replace("0b",str(numbits)+"'b")+";#1\n") # Aqui gurdamos en una string
                                         #da en binario       Sutituye 0b                      # la declaracion de cada 
             OpenedFile.write(inps)      #la combinacion      por N'b                            señal de prueba
-            OpenedFile.write("\n\t\t$finish;\n\tend\nendmodule")
+            OpenedFile.write("\n\t\t$finish;\n\tend\n")
+            if inputclck!="":
+                OpenedFile.write("\talways #1 " + inputclck + "=~" + inputclck + ";")
+            OpenedFile.write("\nendmodule")

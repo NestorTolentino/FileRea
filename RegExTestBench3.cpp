@@ -8,7 +8,7 @@ using namespace std;
 int main(){
     //read .sv file
     ifstream file;
-    std::ofstream o("testbench.sv");
+    std::ofstream o("testbonc.sv");
     string lineFile;
     string completeFile;
     string moduleName;
@@ -38,13 +38,13 @@ int main(){
     //cout <<completeFile << "'\n";
       
     while(regex_search(completeFile, moduleNameMatch, moduleNameRegEx)){
-        moduleName += moduleNameMatch.str();
+        moduleName += moduleNameMatch[1].str();
         completeFile= moduleNameMatch.suffix();
     }
     //****************************************************
     //Extraction of the inputs
 
-    regex inputsRegEx("input\\s*(.*)");
+    regex inputsRegEx("input\\s*(.*)\\b");
     smatch inputsMatch;
     string inputschange[10];
      int a = 0;
@@ -52,39 +52,39 @@ int main(){
     while(regex_search(completeFile, inputsMatch, inputsRegEx)){
         
         inputschange[a] = "reg "+inputsMatch[1].str();
-            
-        inputs += inputsMatch.str()+ "\n";
+       
+        inputs += inputsMatch[1].str()+ "\n";
         completeFile= inputsMatch.suffix();
         a = a+1;
     }
     //*****************************************************
     //Extraction of the outputs
 
-    regex outputsRegEx("output\\s*(.*)");
+    //regex outputsRegEx("output\\s*(.*)\\b");
+    regex outputsRegEx("output\\s*(?:reg)*\\s*(.*)\\b");
     smatch outputsMatch;
     string outputschange[10];
     int b=0;
 
     while(regex_search(completeFile, outputsMatch, outputsRegEx)){
         outputschange[b] = "wire "+outputsMatch[1].str();
-
-        outputs += outputsMatch.str() + "\n";
+        outputs += outputsMatch[1].str() + "\n";
         completeFile= outputsMatch.suffix();
         b =b+1;
     }
     //*****************************************************
-    o<<moduleName + "_TB;"<<endl;
+    o<<"module "<<moduleName + "_TB;"<<endl;
      int k = 0;
     
     while (inputschange[k] != ""){
-        o<<inputschange[k]<<endl;
+        o<<inputschange[k]<<";"<<endl;
         k = k+1;
     }
 
     k = 0;
     
     while (outputschange[k] != ""){
-        o<<outputschange[k]<<endl;
+        o<<outputschange[k]<<";"<<endl;
         k = k+1;
     }
 
@@ -95,6 +95,7 @@ int main(){
  // Converting the inputs to char []***********************
     char instr[inputs.size() + 1];
     strcpy(instr, inputs.c_str());
+  
 //*********************************************************
 //**********Spliting the inputs ***************************
     char * pch;
@@ -117,117 +118,10 @@ int main(){
     while (pch != NULL)
     {
         splitOutputs[r].append(pch);
-        pch = strtok (NULL, " ,;\n\r");
+        pch = strtok (NULL, "re ,;\n\r");
         r += 1;
     }
-//*********************************************************
-
-  /*  int  i = 0;
-
-    while(splitInputs[i] != ""){
-        cout<<splitInputs[i]<<endl;
-        i += 1;
-    }
-
-    i = 0;
-
-    while(splitOutputs[i] != ""){
-        cout<<splitOutputs[i]<<endl;
-        i += 1;
-    }
-
-    string justInputs [20];
-    string justOutputs[20];
-    string valueVectors[20];
-
-    r =0;
-    int v = 0;
-
-    int numVectors = 0;
-    int numFirstVector = 0;
-    int numSecondVector = 0;
-    int numThirdVector = 0;
-    int offset = 0;
-    int flag2 = 0;
-
-    for (int j = 0; j<20; j++){
-        if(splitInputs[j].compare("input") == 0){
-            splitInputs[j].append("Holi");
-            flag2 += 1;
-        }
-        else if(splitInputs[j].compare(0,1,"[") == 0){
-            valueVectors[v].append(splitInputs[j]);
-            v += 1;
-            numVectors += 1;
-        }
-        else
-        {
-            if(numVectors == 1 && flag2 == 1){
-                numFirstVector += 1;
-            }
-            else if(numVectors == 2 && flag2 == 2){
-                numSecondVector += 1;
-            }
-            else
-            {
-                numThirdVector += 1;
-            }
-            justInputs[r].append(splitInputs[j]);
-            r += 1;
-            offset +=1;
-        }
-    }
-
-     for (int j = 0; j<20; j++){
-        if(splitOutputs[j].compare("input") == 0){
-            splitOutputs[j].append("Holi");
-            flag2 += 1;
-        }
-        else if(splitOutputs[j].compare(0,1,"[") == 0){
-            valueVectors[v].append(splitOutputs[j]);
-            v += 1;
-            numVectors += 1;
-        }
-        else
-        {
-            if(numVectors == 1 && flag2 == 1){
-                numFirstVector += 1;
-            }
-            else if(numVectors == 2 && flag2 == 2){
-                numSecondVector += 1;
-            }
-            else
-            {
-                numThirdVector += 1;
-            }
-            justInputs[r].append(splitInputs[j]);
-            r += 1;
-            offset +=1;
-        }
-    }
-
-
-    for(int y = 0; y <numFirstVector; y++){
-        cout<<"reg "+valueVectors[0]+" "+justInputs[y]+";"<<endl;
-    }
-    for(int y = 0; y <numSecondVector; y++){
-        cout<<"reg "+valueVectors[1]+" "+justInputs[y+numFirstVector]+";"<<endl;
-    }
-
-    //o<<moduleName<<endl;
-    k = 0;
-    
-    while (justInputs[k] != ""){
-        o<<justInputs[k]<<endl;
-        k = k+1;
-    }
-    k = 0;
-    
-    while (splitOutputs[k] != ""){
-        o<<splitOutputs[k]<<endl;
-        k = k+1;
-    }
-    return 0;*/
+//*******************************************************************************************************************************************
     string justInputs [20];
     string justOutputs[20];
     //string vector1[20];
@@ -249,8 +143,10 @@ int main(){
             justInputs[r].append(splitInputs[j]);
             r +=1;
             j +=1;
+            
         }
     }
+    //*****************************************************************************************************
        
     r = 0;
     j = 0;
@@ -275,7 +171,9 @@ int main(){
     while (justInputs[k] != ""){
        o<<"."<<justInputs[k]<<"("<<justInputs[k]<<"),";
         k = k+1;
+       // cout<<justInputs[k]<<endl;
     }
+    //o<<"."<<justInputs[k]<<"("<<justInputs[k]<<")";
     k = 0;
     
     while (justOutputs[k] != ""){
@@ -310,15 +208,40 @@ int main(){
     inputs.erase(0, pos + delimiter.length());
     ite++;
     }
-    delimiter = ",";
+    
+    /* delimiter = ",";
         int ite2=0;
         while ((pos = token[0].find(delimiter)) != string::npos) {
         token[0].erase(0, pos + delimiter.length());
         ite2++;
-        }
+        } */
     //ite2 se debe de sumar 1
-    cout<<ite2;
-    //cout << token[2] <<endl;
+    //cout<< ite2 <<endl;
+    //cout<<token
+
+    regex sizeRegEx("\\[(\\d*):(\\d*)\\]");
+    smatch sizeMatch;
+    string digit1[10];
+    string digit2[10];
+    int dig1, dig2, result;
+    for (size_t j = 0; j < ite; j++)
+    {
+        regex_search(token[j], sizeMatch, sizeRegEx);
+        //sizeI[b] = "wire "+sizeMatch[1].str();
+        if(!sizeMatch.empty()){
+            digit1[j] += sizeMatch[1].str();
+            digit2[j] += sizeMatch[2].str();
+            dig1 = stoi(digit1[j]);
+            //cout<<dig1<<" ";
+            dig2 = stoi(digit2[j]);
+            result=abs(dig1-dig2)+1;
+            cout<<result<<"  "; 
+        }
+      /* code */
+    }
+  
+    
+    
 
     return 0;
 }
