@@ -295,7 +295,7 @@ int main(){
         m =round(v/2);
     }
     k=0;
-    for (int i;i<=m;i++){
+    for (int i=0;i<=m;i++){
         if (i!=m){
         randSet.insert(rand()%v);}
         else{
