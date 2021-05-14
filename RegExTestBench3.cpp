@@ -33,6 +33,10 @@ int main(){
         completeFile += lineFile + "\n";
     }
     //****************************************************
+    //Remove Comments
+    regex CommentsRegEx("\\/\\/[^\n]*\n");
+    completeFile = regex_replace(completeFile,CommentsRegEx,"\n");
+    //****************************************************
     //Extraction of the module's name
 
     regex moduleNameRegEx("module\\s+(\\w+)");
