@@ -14,14 +14,14 @@ string toBinary(unsigned long long int);
 int main(){
     //read .sv file
     ifstream file;
-    std::ofstream o("testbonc.sv");
+    std::ofstream o("TestBench.sv");
     string lineFile;
     string completeFile;
     string moduleName;
     string inputs;
     string outputs;
 
-    file.open("design2.sv",ios::in);
+    file.open("Design.sv",ios::in);
 
     if(file.fail()){
         cout<<"It was impossible to read the file"<<endl;
@@ -223,14 +223,17 @@ int main(){
         justInputs[i]=secInputs[i];
     }
 //****************************************************
-    //Clock initialization   
+    //Clock initialization
+    int cor = 0;   
     if (cl!=""){
         o<<"\t\t"<<cl<<"=1'b0;#1\n";
+        cor++;
     }
 //****************************************************
     //RST initialization  
     if (rt!=""){
         o<<"\t\t"<<rt<<"=1'b1;#1\n\t\t"<<rt<<"=1'b0;#1\n";
+        cor++;
     }
 
 //****************************************************
@@ -278,8 +281,11 @@ int main(){
            n = n+size;
         }    
     }
+
+    n -= cor;
 //****************************************************
     //Generation of random cobinations of the total number of bits
+
     unsigned long long int  v = pow(2,n);
     std::set <unsigned long long int> randSet = {0};
     std::set <unsigned long long int>::iterator itr;
@@ -295,16 +301,19 @@ int main(){
         m =round(v/2);
     }
     k=0;
-    for (int i=0;i<=m;i++){
+    for (int i = 0;i<=m;i++){
         if (i!=m){
         randSet.insert(rand()%v);}
         else{
         randSet.insert(v-1);}
     }
+    cout<<m<<endl;
 //****************************************************
     //Generation string with each input to assaign to this the generated combinations    
     //ex. {A,B,C,...}=
+    if(justInputs[0]!=""){
     string allinputs="{";
+    
     while(justInputs[k]!=""){  
         if(justInputs[k+1] != ""){
         allinputs += justInputs[k]+",";
@@ -312,12 +321,14 @@ int main(){
         k ++;
     }
     allinputs += justInputs[k-1]+"}=";
+    
 //****************************************************
     //Writing of each combination transform in binary
     for (itr = randSet.begin(); itr != randSet.end(); itr++)
     {
 
        o <<"\t\t"<<allinputs<<n<<"'b"<<toBinary(*itr)<<";#1"<<endl;
+    }
     }
 //****************************************************
     //Closing of the declaration of the simulates signals
