@@ -3,7 +3,13 @@
 #include<string>
 #include<regex>
 #include<fstream>
+#include<math.h>
+#include<set>
+#include<iterator>
 using namespace std;
+
+
+string toBinary(unsigned long long int);
 
 int main(){
     //read .sv file
@@ -15,8 +21,7 @@ int main(){
     string inputs;
     string outputs;
 
-    file.open("design2.sv",ios::in);
-
+    file.open("design.sv",ios::in);
 
     if(file.fail()){
         cout<<"It was impossible to read the file"<<endl;
@@ -32,10 +37,6 @@ int main(){
 
     regex moduleNameRegEx("module\\s+(\\w+)");
     smatch moduleNameMatch;
-    //regex_search(completeFile, moduleNameMatch, moduleNameRegEx);
-        
-    //cout << '1' << ": '" << moduleNameMatch.str() << "'\n";
-    //cout <<completeFile << "'\n";
       
     while(regex_search(completeFile, moduleNameMatch, moduleNameRegEx)){
         moduleName += moduleNameMatch[1].str();
@@ -60,7 +61,6 @@ int main(){
     //*****************************************************
     //Extraction of the outputs
 
-    //regex outputsRegEx("output\\s*(.*)\\b");
     regex outputsRegEx("output\\s*(?:reg)*\\s*(.*)\\b");
     smatch outputsMatch;
     string outputschange[10];
@@ -73,7 +73,7 @@ int main(){
         b =b+1;
     }
     //*****************************************************
-    o<<"module "<<moduleName + "_TB;"<<endl;
+    o<<"`timescale 1ns/1ns\nmodule "<<moduleName + "_TB;"<<endl;
      int k = 0;
     
     while (inputschange[k] != ""){
@@ -124,8 +124,6 @@ int main(){
 //*******************************************************************************************************************************************
     string justInputs [20];
     string justOutputs[20];
-    //string vector1[20];
-
 
     r =0;
     int j = 0;
@@ -135,7 +133,6 @@ int main(){
             j +=1;
         }
         else if(splitInputs[j].compare(0,1,"[") == 0){
-            //vector1.append(splitInputs[j]);
             j +=1;
         }
         else
@@ -165,15 +162,13 @@ int main(){
         }
     }
 
-    //o<<moduleName<<endl;
     k = 0;
     o<<moduleName<<" UUT(";
     while (justInputs[k] != ""){
        o<<"."<<justInputs[k]<<"("<<justInputs[k]<<"),";
         k = k+1;
-       // cout<<justInputs[k]<<endl;
     }
-    //o<<"."<<justInputs[k]<<"("<<justInputs[k]<<")";
+
     k = 0;
     
     while (justOutputs[k] != ""){
@@ -186,62 +181,138 @@ int main(){
     }
     o<<"."<<justOutputs[k-1]<<"("<<justOutputs[k-1]<<"));"; 
     
-    
-    regex moduleNameRegEx2("module\\s");
-    string moduleName2;
-
-    regex_search(moduleName, moduleNameMatch, moduleNameRegEx2);
-    moduleName2= moduleNameMatch.suffix();
-
-    o<<"\ninitial"<<endl<<"\tbegin"<<endl<<"\t\t$dumpfile(\""<<moduleName2<<".vcd\");";
-    o<<"\n\t\t$dumpvars(1,"<<moduleName2<<"_TB);";
+    o<<"\ninitial"<<endl<<"\tbegin"<<endl<<"\t\t$dumpfile(\""<<moduleName<<".vcd\");";
+    o<<"\n\t\t$dumpvars(1,"<<moduleName<<"_TB);\n";
     string token[20];
     int ite=0;
-    //cout<<inputs.find("\n")<<endl;
-   
-    //std::string s = "scott>=tiger>=mushroom";
+    ///////////////
+    k =0;
+    r =0;
+    string cl="";
+    string rt="";
+///////////////*******************************************************************************************
+    string secInputs[20];
+    while(justInputs[k] != ""){
+        if(justInputs[k].compare("rst") == 0|| justInputs[k].compare("reset") == 0){
+            rt = justInputs[k];
+            justInputs[k]="";
+            k++;
+        }
+        else if (justInputs[k].compare("clk") == 0|| justInputs[k].compare("clock") == 0){
+            cl = justInputs[k];
+            justInputs[k]="";
+            k++;
+        }
+        else
+        {
+            secInputs[r].append(justInputs[k]); 
+            justInputs[k]="";
+            r ++;
+            k ++;
+        }
+    }
+    for (int i = 0; i < 20; i++)
+    {
+        justInputs[i]=secInputs[i];
+    }   
+    if (cl!=""){
+        o<<"\t\t"<<cl<<"=1'b0;#1\n";
+    }
+    if (rt!=""){
+        o<<"\t\t"<<rt<<"=1'b1;#1\n\t\t"<<rt<<"=1'b0;#1\n";
+    }
+  //////////////////  
     string delimiter = "\n";
     size_t pos = 0;
-    //std::string token;
     while ((pos = inputs.find(delimiter)) != string::npos) {
     token[ite] = inputs.substr(0, pos);
     inputs.erase(0, pos + delimiter.length());
     ite++;
     }
-    
-    /* delimiter = ",";
-        int ite2=0;
-        while ((pos = token[0].find(delimiter)) != string::npos) {
-        token[0].erase(0, pos + delimiter.length());
-        ite2++;
-        } */
-    //ite2 se debe de sumar 1
-    //cout<< ite2 <<endl;
-    //cout<<token
-
     regex sizeRegEx("\\[(\\d*):(\\d*)\\]");
     smatch sizeMatch;
     string digit1[10];
     string digit2[10];
+    regex groupRegEx("([^,]+)");
+    smatch groupMatch;
+    int n=0;
+    string aux;
     int dig1, dig2, result;
+    int size;
     for (size_t j = 0; j < ite; j++)
     {
         regex_search(token[j], sizeMatch, sizeRegEx);
-        //sizeI[b] = "wire "+sizeMatch[1].str();
+        size = 0;
+        aux = token[j];
+        while(regex_search(aux, groupMatch, groupRegEx)){
+            size++;
+            aux= groupMatch.suffix();
+        }
         if(!sizeMatch.empty()){
             digit1[j] += sizeMatch[1].str();
             digit2[j] += sizeMatch[2].str();
             dig1 = stoi(digit1[j]);
-            //cout<<dig1<<" ";
             dig2 = stoi(digit2[j]);
             result=abs(dig1-dig2)+1;
-            cout<<result<<"  "; 
+            n=n+result*size;         
         }
-      /* code */
+        else
+        {
+           n = n+size;
+        }    
     }
-  
-    
-    
 
+    unsigned long long int  v = pow(2,n);
+    std::set <unsigned long long int> randSet = {0};
+    std::set <unsigned long long int>::iterator itr;
+    int m;
+
+    if(v>100){
+      m = 100;
+    }
+    else if (v<25){
+        m = v;
+    }
+    else{
+        m =round(v/2);
+    }
+    k=0;
+    string allinputs="{";
+    while(justInputs[k]!=""){  
+        if(justInputs[k+1] != ""){
+        allinputs += justInputs[k]+",";
+        }
+        k ++;
+    }
+    allinputs += justInputs[k-1]+"}=";
+    for (int i;i<=m;i++){
+        if (i!=m){
+        randSet.insert(rand()%v);}
+        else{
+        randSet.insert(v-1);}
+    }
+    for (itr = randSet.begin(); itr != randSet.end(); itr++)
+    {
+
+       o <<"\t\t"<<allinputs<<n<<"'b"<<toBinary(*itr)<<";#1"<<endl;
+    }
+    o<<"\t\t$finish;\n\tend\n";
+    if (cl!=""){
+        o<<"\t"<<"always #1 "<<cl<<"=~"<<cl<<";\n";
+    }
+    o<<"endmodule"<<endl;
+    
+    randSet.clear();    
     return 0;
+}
+string toBinary(unsigned long long int n)
+{
+    string r;
+    if(n!=0){
+        while(n!=0) {r=(n%2==0 ?"0":"1")+r; n/=2;}
+    }
+    else{
+        r = "0";
+    }
+    return r;
 }

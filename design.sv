@@ -1,9 +1,6 @@
   
   module mux_4_1(
   input I0,I1,I2,I3,
-  input I4,
-  input [5:0] lasdasdeedads,hinput,
-  input [7:0] xinput,
   input [1:0] s,
   output out
   

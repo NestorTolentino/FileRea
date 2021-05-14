@@ -1,10 +1,39 @@
-module reg_memory_TB;
-reg [4:0] A1,A2,A3;
-reg [31:0] WD3;
-reg clk,rst,rw;
-wire [31:0] RD1,RD2;
-reg_memory UUT(.A1(A1),.A2(A2),.A3(A3),.WD3(WD3),.clk(clk),.rst(rst),.rw(rw),.RD1(RD1),.RD2(RD2));
+`timescale 1ns/1ns
+module mux_4_1_TB;
+reg I0,I1,I2,I3;
+reg [1:0] s;
+wire out;
+mux_4_1 UUT(.I0(I0),.I1(I1),.I2(I2),.I3(I3),.s(s),.out(out));
 initial
 	begin
-		$dumpfile(".vcd");
-		$dumpvars(1,_TB);
+		$dumpfile("mux_4_1.vcd");
+		$dumpvars(1,mux_4_1_TB);
+		{I0,I1,I2,I3,s}=6'b0;#1
+		{I0,I1,I2,I3,s}=6'b10;#1
+		{I0,I1,I2,I3,s}=6'b110;#1
+		{I0,I1,I2,I3,s}=6'b1001;#1
+		{I0,I1,I2,I3,s}=6'b1010;#1
+		{I0,I1,I2,I3,s}=6'b1101;#1
+		{I0,I1,I2,I3,s}=6'b10001;#1
+		{I0,I1,I2,I3,s}=6'b10100;#1
+		{I0,I1,I2,I3,s}=6'b11010;#1
+		{I0,I1,I2,I3,s}=6'b11011;#1
+		{I0,I1,I2,I3,s}=6'b11111;#1
+		{I0,I1,I2,I3,s}=6'b100011;#1
+		{I0,I1,I2,I3,s}=6'b100111;#1
+		{I0,I1,I2,I3,s}=6'b101000;#1
+		{I0,I1,I2,I3,s}=6'b101001;#1
+		{I0,I1,I2,I3,s}=6'b101011;#1
+		{I0,I1,I2,I3,s}=6'b101100;#1
+		{I0,I1,I2,I3,s}=6'b101110;#1
+		{I0,I1,I2,I3,s}=6'b110010;#1
+		{I0,I1,I2,I3,s}=6'b110011;#1
+		{I0,I1,I2,I3,s}=6'b110110;#1
+		{I0,I1,I2,I3,s}=6'b111000;#1
+		{I0,I1,I2,I3,s}=6'b111010;#1
+		{I0,I1,I2,I3,s}=6'b111011;#1
+		{I0,I1,I2,I3,s}=6'b111100;#1
+		{I0,I1,I2,I3,s}=6'b111111;#1
+		$finish;
+	end
+endmodule
