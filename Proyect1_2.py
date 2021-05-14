@@ -200,17 +200,24 @@ if len(list2)==0:
     with open(OutFile, 'a') as OpenedFile:
         if (OpenedFile.mode != 'a'): print("Not ready to write")
         else: 
+            if inputclck!="":
+                OpenedFile.write("\t\t\t"+inputclck+"=1'b0; #1\n")
+            if inputrst!="":
+                OpenedFile.write("\t\t\t"+inputrst+"=1'b1; #1 \n" + "\t\t\t" + inputrst +"=1'b0; #1\n")
             OpenedFile.write("\n\t\t$finish;\n\tend\n")
-            OpenedFile.write("\talways #1 " + inputclck + "=~" + inputclck + ";\nendmodule")
+            if inputclck!="":
+                OpenedFile.write("\talways #1 " + inputclck + "=~" + inputclck + ";")
+            OpenedFile.write("\nendmodule")
             
 else:
     with open(OutFile, 'a') as OpenedFile:
         if (OpenedFile.mode != 'a'): print("Not ready to write")
         else:
-            if inputrst!="":
-                OpenedFile.write("\t\t\t"+inputrst+"=1'b1; #1 \n" + "\t\t\t" + inputrst +"=1'b0; #1\n")
             if inputclck!="":
                 OpenedFile.write("\t\t\t"+inputclck+"=1'b0; #1\n")
+            if inputrst!="":
+                OpenedFile.write("\t\t\t"+inputrst+"=1'b1; #1 \n" + "\t\t\t" + inputrst +"=1'b0; #1\n")
+            
             if 2**numbits <25:
                 random_signals=random.sample(range(1,2**numbits-1),2**numbits-2)
             elif 2**numbits >100:
