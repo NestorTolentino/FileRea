@@ -6,12 +6,14 @@
 #include<math.h>
 #include<set>
 #include<iterator>
+#include<chrono>
 using namespace std;
 
 
 string toBinary(unsigned long long int);
 
 int main(){
+    auto start = std::chrono::system_clock::now();
     //read .sv file
     ifstream file;
     std::ofstream o("TestBench.sv");
@@ -342,8 +344,12 @@ int main(){
     //Closing of the module
     o<<"endmodule"<<endl;
     
-    randSet.clear();    
+    randSet.clear();   
+    auto end = std::chrono::system_clock::now();
+    std::chrono::duration<float, std::milli> duration = end - start;
+    std::cout << duration.count() <<"segs"<< std::endl; 
     return 0;
+    
 }
 
 //****************************************************
