@@ -6,13 +6,14 @@
 #include<math.h>
 #include<set>
 #include<iterator>
+#include <map>
+#include <random>
+#include<chrono>
+
 using namespace std;
 
-
-string toBinary(unsigned long long int);
-
 int main(){
-    //read .sv file
+    auto begin = std::chrono::high_resolution_clock::now();
     ifstream file;
     std::ofstream o("testbonc.sv");
     string lineFile;
@@ -21,7 +22,7 @@ int main(){
     string inputs;
     string outputs;
 
-    file.open("design2.sv",ios::in);
+    file.open("design7.sv",ios::in);
 
     if(file.fail()){
         cout<<"It was impossible to read the file"<<endl;
@@ -103,12 +104,12 @@ int main(){
 //*********************************************************
 //**********Spliting the inputs ***************************
     char * pch;
-    pch = strtok (instr," ,;\n\r");
+    pch = strtok (instr," ],;\n\r");
 
     while (pch != NULL)
     {
         splitInputs[r].append(pch);
-        pch = strtok (NULL, " ,;\n\r");
+        pch = strtok (NULL, " ],;\n\r");
         r = r +1;
     }
 //**********************************************************
@@ -118,34 +119,43 @@ int main(){
 //*********************************************************
 //Spliting the outputs ************************************
     r = 0;
-    pch = strtok (outstr," ,;\n\r");
+    pch = strtok (outstr," ],;\n\r");
     while (pch != NULL)
     {
         splitOutputs[r].append(pch);
-        pch = strtok (NULL, "re ,;\n\r");
+        pch = strtok (NULL, " ],;\n\r");
         r += 1;
     }
 //****************************************************
     //Celning of "[..]" and  and keyword "output" and "inputs" from lits of inputs
-    //and outputs   
+    //and outputs. And, identification of RST and CLK  
     string justInputs [20];
     string justOutputs[20];
-
-    r =0;
+    string cl="";
+    string rt="";
     int j = 0;
+    r =0;
 
     while(splitInputs[j] != ""){
         if(splitInputs[j].compare("input") == 0){
-            j +=1;
+            j ++;
         }
         else if(splitInputs[j].compare(0,1,"[") == 0){
-            j +=1;
+            j ++;
+        }
+        else if(splitInputs[j].compare("rst") == 0|| splitInputs[j].compare("reset") == 0){
+            rt = splitInputs[j];
+            j++;
+        }
+        else if (splitInputs[j].compare("clk") == 0|| splitInputs[j].compare("clock") == 0){
+            cl = splitInputs[j];
+            j++;
         }
         else
         {
             justInputs[r].append(splitInputs[j]);
-            r +=1;
-            j +=1;
+            r ++;
+            j ++;
             
         }
     }
@@ -172,6 +182,15 @@ int main(){
     // strat the simulation  
     k = 0;
     o<<moduleName<<" UUT(";
+
+    if (cl!=""){
+        o<<"."<<cl<<"("<<cl<<"),";
+    }
+
+    if (rt!=""){
+        o<<"."<<rt<<"("<<rt<<"),";
+    }
+
     while (justInputs[k] != ""){
        o<<"."<<justInputs[k]<<"("<<justInputs[k]<<"),";
         k = k+1;
@@ -191,46 +210,19 @@ int main(){
     
     o<<"\ninitial"<<endl<<"\tbegin"<<endl<<"\t\t$dumpfile(\""<<moduleName<<".vcd\");";
     o<<"\n\t\t$dumpvars(1,"<<moduleName<<"_TB);\n";
-
+    
 //****************************************************
-    //Identification of RST and CLK
-    k =0;
-    r =0;
-    string cl="";
-    string rt="";
-    string secInputs[20];
-    while(justInputs[k] != ""){
-        if(justInputs[k].compare("rst") == 0|| justInputs[k].compare("reset") == 0){
-            rt = justInputs[k];
-            justInputs[k]="";
-            k++;
-        }
-        else if (justInputs[k].compare("clk") == 0|| justInputs[k].compare("clock") == 0){
-            cl = justInputs[k];
-            justInputs[k]="";
-            k++;
-        }
-        else
-        {
-            secInputs[r].append(justInputs[k]); 
-            justInputs[k]="";
-            r ++;
-            k ++;
-        }
-    }
-    for (int i = 0; i < 20; i++)
-    {
-        justInputs[i]=secInputs[i];
-    }
-//****************************************************
-    //Clock initialization   
+    //Clock initialization  
+    int cor = 0; 
     if (cl!=""){
         o<<"\t\t"<<cl<<"=1'b0;#1\n";
+        cor++;
     }
 //****************************************************
     //RST initialization  
     if (rt!=""){
         o<<"\t\t"<<rt<<"=1'b1;#1\n\t\t"<<rt<<"=1'b0;#1\n";
+        cor++;
     }
 
 //****************************************************
@@ -278,12 +270,19 @@ int main(){
            n = n+size;
         }    
     }
+    n -= cor;
 //****************************************************
     //Generation of random cobinations of the total number of bits
-    unsigned long long int  v = pow(2,n);
-    std::set <unsigned long long int> randSet = {0};
-    std::set <unsigned long long int>::iterator itr;
+    long double  v = pow(2,n);
+    std::set <string> randSet = {"0"};
+    std::set <string>::iterator itr;
     int m;
+
+    const std::string CHARACTERS = "01";
+    static std::random_device rd;
+    static std::mt19937 rng{rd()};
+    uniform_int_distribution<> distribution(0, CHARACTERS.size() - 1);
+    string ran_;
 
     if(v>100){
       m = 100;
@@ -295,15 +294,24 @@ int main(){
         m =round(v/2);
     }
     k=0;
-    for (int i=0;i<=m;i++){
-        if (i!=m){
-        randSet.insert(rand()%v);}
-        else{
-        randSet.insert(v-1);}
+    for (int u=0;u<m;u++){
+        ran_= "";
+        for (size_t i = 0; i < n; ++i)
+        {
+            if(u<m-1){
+                ran_ += CHARACTERS[distribution(rng)];
+            }
+            else{
+                ran_ += "1";
+            }
+        }
+        randSet.insert(ran_);
     }
 //****************************************************
     //Generation string with each input to assaign to this the generated combinations    
     //ex. {A,B,C,...}=
+if(justInputs[0]!="")
+{
     string allinputs="{";
     while(justInputs[k]!=""){  
         if(justInputs[k+1] != ""){
@@ -317,8 +325,9 @@ int main(){
     for (itr = randSet.begin(); itr != randSet.end(); itr++)
     {
 
-       o <<"\t\t"<<allinputs<<n<<"'b"<<toBinary(*itr)<<";#1"<<endl;
+       o <<"\t\t"<<allinputs<<n<<"'b"<<*itr<<";#1"<<endl;
     }
+}
 //****************************************************
     //Closing of the declaration of the simulates signals
     o<<"\t\t$finish;\n\tend\n";
@@ -331,20 +340,8 @@ int main(){
     //Closing of the module
     o<<"endmodule"<<endl;
     
-    randSet.clear();    
+    auto end = std::chrono::high_resolution_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
+    printf("Time measured: %.4f seconds.\n", elapsed.count() * 1e-9);
     return 0;
-}
-
-//****************************************************
-    //Function that trasfroms to binary integers
-string toBinary(unsigned long long int n)
-{
-    string r;
-    if(n!=0){
-        while(n!=0) {r=(n%2==0 ?"0":"1")+r; n/=2;}
-    }
-    else{
-        r = "0";
-    }
-    return r;
 }

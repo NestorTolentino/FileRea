@@ -1,6 +1,6 @@
 module reg_memory(
   input [4:0] A1,A2,A3,
-  input [31:0] WD3,
+  input [47:0] WD3,
   input clk,rst,rw,
   output reg [31:0] RD1,RD2
  

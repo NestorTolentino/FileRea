@@ -15,6 +15,10 @@
 import re
 import random
 
+import time
+
+s=time.time()
+
 #~~~~~~~~~~~~~~~~~~~~funciones~~~~~~~~~~~~~~~~~~~~#
 def StringOfFile(NameOfFile):
     with open(File, 'r') as OpenedFile:
@@ -26,7 +30,7 @@ def StringOfFile(NameOfFile):
 #~~~~~~~~~~~~Abrir archivo
 #File = input("File name: ")
 #File = input("Texto a examinar: ")
-File = "design5.sv"
+File = "design7.sv"
 #regex = input("Ingresa una expresion regular: ")
 #x=input("if sequential write 's', if combinational write 'c': ")
 text = StringOfFile(File)
@@ -156,7 +160,6 @@ for i in range(len(Outputs)):
                                                      # Si no identificamos ']' solo cremos la lista
 #list 3 tiene todas las salidas
 
-
 #~~~~~~~~~~~~~Instancia el modulo a probar
 OutFile = "Testbenc.sv"
 with open(OutFile, 'a') as OpenedFile:
@@ -164,13 +167,12 @@ with open(OutFile, 'a') as OpenedFile:
    else:
         Inputstring=""
         Outputstring =""
-        
         for i in range(len(list2)): # Con este for eliminamos los espacios de los string de la lista de entradas
             list2[i][0]=list2[i][0].replace(" ","")                       # Cremos un string con la declaracion directa
             Inputstring=Inputstring +"."+list2[i][0]+"("+list2[i][0]+")," # de las entrdas del DUT/UUT
         for i in range(len(list3)-1): # Con este for eliminamos los espacios de los string de la lista de salidas
             list3[i]=list3[i].replace(" ","")                         # Cremos un string con la declaracion directa
-            Outputstring=Outputstring+"."+list3[i]+"("+list3[i]+"),"  # de las salidas del DUT/UUT 
+            Outputstring=Outputstring+"."+list3[i]+"("+list3[i]+"),"  # de las salidas del DUT/UUT
         OpenedFile.write(ModuleName+" UUT("+Inputstring+Outputstring+"."+list3[-1].replace(" ","")+"("+list3[-1].replace(" ","")+"));\n")
         OpenedFile.write("\ninitial\n\tbegin\n\t\t$dumpfile(\""+ModuleName+'.vcd");\n\t\t$dumpvars(1,'+ModuleName+"_TB);\n")
 
@@ -189,58 +191,57 @@ for i in list2:
         list2.remove(i)
 
 #~~~~~~~~~~~~~Creacion de las señales de prueba
+with open(OutFile, 'a') as OpenedFile:
+    if inputclck!="":
+        OpenedFile.write("\t\t\t"+inputclck+"=1'b0; #1\n")
+    if inputrst!="":
+        OpenedFile.write("\t\t\t"+inputrst+"=1'b1; #1 \n" + "\t\t\t" + inputrst +"=1'b0; #1\n")
+
+
 numbits=0
 for i in range(len(list2)): # Con este for determinamos la suma total del tamño de bits todas las entradas 
     numbits+=list2[i][1]
 
-inps=""
+inps="\t\t\t{"
+for j in range(len(list2)-1): # Aqui podemos entre '{}' cada entrada excepto la ultima
+    inps += list2[j][0]+","
+inps+=list2[-1][0]+"}="
+
+def ran_set(si):
+    Bset = "01"
+    ret=set()
+    it = 0
+    while(it<si):
+        r = ''.join(random.choice(Bset) for i in range(numbits))
+        if(r not in ret):
+            it +=1
+        ret.add(r)
+    return ret
 
 OutFile = "Testbenc.sv"
-if len(list2)==0:
-    with open(OutFile, 'a') as OpenedFile:
-        if (OpenedFile.mode != 'a'): print("Not ready to write")
-        else: 
-            if inputclck!="":
-                OpenedFile.write("\t\t\t"+inputclck+"=1'b0; #1\n")
-            if inputrst!="":
-                OpenedFile.write("\t\t\t"+inputrst+"=1'b1; #1 \n" + "\t\t\t" + inputrst +"=1'b0; #1\n")
-            OpenedFile.write("\n\t\t$finish;\n\tend\n")
-            if inputclck!="":
-                OpenedFile.write("\talways #1 " + inputclck + "=~" + inputclck + ";")
-            OpenedFile.write("\nendmodule")
-            
-else:
+if len(list2)!=0:
     with open(OutFile, 'a') as OpenedFile:
         if (OpenedFile.mode != 'a'): print("Not ready to write")
         else:
-            if inputclck!="":
-                OpenedFile.write("\t\t\t"+inputclck+"=1'b0; #1\n")
-            if inputrst!="":
-                OpenedFile.write("\t\t\t"+inputrst+"=1'b1; #1 \n" + "\t\t\t" + inputrst +"=1'b0; #1\n")
-            
             if 2**numbits <25:
-                random_signals=random.sample(range(1,2**numbits-1),2**numbits-2)
+                random_signals=list(ran_set(2**numbits-2))
+    
             elif 2**numbits >100:
-                random_signals=random.sample(range(1,2**numbits-1),100)
+                random_signals=list(ran_set(100))
+
             else:
-                v=round(2**numbits/2)
-                random_signals=random.sample(range(1,2**numbits-1),v)   # Four samples without replacement
+                random_signals=list(ran_set(2**numbits/2))
         
-            random_signals.extend([0,2**numbits-1])
-            random_signals.sort()
-        #print(random_signals)
+            random_signals=[''.join('0' for i in range(numbits))]+\
+            random_signals+[''.join('1' for i in range(numbits))]
 
             for i in random_signals: # Con este for cremos cada combiacion de bits de las entrdas
-                #if 1 == random_signals.co:
-                    if i in random_signals:
-                        inps+="\t\t\t{"
-                        for j in range(len(list2)-1): # Aqui pndemos entre '{}' cada entrada excepto la ultima
-                            inps += list2[j][0]+","
-                
-                        inps+=list2[-1][0]+"}="+(str(bin(i)).replace("0b",str(numbits)+"'b")+";#1\n") # Aqui gurdamos en una string
-                                        #da en binario       Sutituye 0b                      # la declaracion de cada 
-            OpenedFile.write(inps)      #la combinacion      por N'b                            señal de prueba
-            OpenedFile.write("\n\t\t$finish;\n\tend\n")
-            if inputclck!="":
-                OpenedFile.write("\talways #1 " + inputclck + "=~" + inputclck + ";")
-            OpenedFile.write("\nendmodule")
+                OpenedFile.write(inps+str(numbits)+"'b"+i+";#1\n")      #la combinacion      por N'b                            señal de prueba
+
+with open(OutFile, 'a') as OpenedFile:
+    OpenedFile.write("\n\t\t$finish;\n\tend\n")
+    if inputclck!="":
+        OpenedFile.write("\talways #1 " + inputclck + "=~" + inputclck + ";")
+    OpenedFile.write("\nendmodule")
+
+print("Time take", time.time()-s)
